@@ -84,6 +84,23 @@ mod tests {
     }
 
     #[test]
+    // Testing with cv_deploy ref
+    fn resolve_ref_ok_3() {
+        let test_store = get_test_store();
+        let result = resolve_ref("cv_deploy#/keys/key4", &test_store);
+        assert!(result.is_ok());
+        let result_schema = result.unwrap();
+        let str_schema_result: Result<&Str, _> = result_schema.try_into();
+        assert!(str_schema_result.is_ok());
+        let str_schema = str_schema_result.unwrap();
+        assert!(str_schema.base.description.is_some());
+        assert_eq!(
+            str_schema.base.description.as_ref().unwrap(),
+            "this is from key4"
+        );
+    }
+
+    #[test]
     fn resolve_ref_err_1() {
         let test_store = get_test_store();
         let ref_ = "#/keys/key2";

@@ -21,12 +21,18 @@ pub struct Store {
     pub eos_config: AnySchema,
     #[serde(alias = "eos_designs")]
     pub avd_design: AnySchema,
+    #[serde(default)]
+    pub cv_deploy: Option<AnySchema>,
 }
 impl Store {
     pub fn get(&self, schema: Schema) -> &AnySchema {
         match schema {
             Schema::AVDDesign => &self.avd_design,
             Schema::EOSConfig => &self.eos_config,
+            Schema::CVDeploy => self
+                .cv_deploy
+                .as_ref()
+                .expect("cv_deploy schema is not available in the store"),
         }
     }
     pub fn as_resolved(mut self) -> Self {
@@ -41,6 +47,12 @@ impl Store {
         resolve_schema(&mut avd_design_schema, &self).unwrap();
         self.avd_design = avd_design_schema;
 
+        // Resolve cv_deploy only if it exists.
+        if let Some(mut cv_deploy_schema) = self.cv_deploy.clone() {
+            resolve_schema(&mut cv_deploy_schema, &self).unwrap();
+            self.cv_deploy = Some(cv_deploy_schema);
+        }
+
         self
     }
 
@@ -54,10 +66,14 @@ impl Store {
     pub fn new_from_paths(
         avd_design_schema_path: PathBuf,
         eos_config_schema_path: PathBuf,
+        cv_deploy_schema_path: Option<PathBuf>,
     ) -> Result<Self, LoadError> {
         Ok(Store {
             eos_config: AnySchema::new_from_path(eos_config_schema_path)?,
             avd_design: AnySchema::new_from_path(avd_design_schema_path)?,
+            cv_deploy: cv_deploy_schema_path
+                .map(AnySchema::new_from_path)
+                .transpose()?,
         })
     }
 }
@@ -68,6 +84,7 @@ impl Load for Store {}
 pub enum Schema {
     AVDDesign,
     EOSConfig,
+    CVDeploy,
 }
 
 impl TryFrom<&str> for Schema {
@@ -80,6 +97,7 @@ impl TryFrom<&str> for Schema {
             "eos_config" => Ok(Self::EOSConfig),
             "eos_designs" => Ok(Self::AVDDesign),
             "eos_cli_config_gen" => Ok(Self::EOSConfig),
+            "cv_deploy" => Ok(Self::CVDeploy),
             _ => Err(SchemaName::new(value.into()).into()),
         }
     }
@@ -90,6 +108,7 @@ impl From<Schema> for String {
         match value {
             Schema::AVDDesign => "avd_design".to_string(),
             Schema::EOSConfig => "eos_config".to_string(),
+            Schema::CVDeploy => "cv_deploy".to_string(),
         }
     }
 }
