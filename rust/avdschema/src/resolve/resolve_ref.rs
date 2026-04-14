@@ -35,7 +35,7 @@ pub fn resolve_ref<'a>(ref_: &str, store: &'a Store) -> Result<&'a AnySchema, Sc
 
 #[cfg(test)]
 mod tests {
-    use crate::resolve::errors::SchemaResolverError;
+    use crate::resolve::errors::{RefRegexError, SchemaResolverError};
     use crate::store::SchemaStoreError;
     use crate::str::Str;
 
@@ -128,5 +128,21 @@ mod tests {
             result.unwrap_err(),
             SchemaResolverError::SchemaStoreError(SchemaStoreError::InvalidSchemaName(_))
         ))
+    }
+
+    #[test]
+    // REF_REGEX contains no fancy features (no lookaheads, lookbehinds, or backreferences),
+    // so fancy_regex delegates it to the regex crate's NFA engine, which never returns Err.
+    // A runtime test triggering RefRegexError via resolve_ref() is therefore not possible
+    // without injecting a different regex. We verify the error type, display format, and
+    // From conversion here instead.
+    fn ref_regex_error_display() {
+        let err = RefRegexError::new("some_schema#/keys/key".to_owned(), "BacktrackLimitExceeded".to_owned());
+        assert_eq!(
+            err.to_string(),
+            "Regex error for schema $ref 'some_schema#/keys/key': BacktrackLimitExceeded."
+        );
+        let resolver_err: SchemaResolverError = err.into();
+        assert!(matches!(resolver_err, SchemaResolverError::RefRegexError(_)));
     }
 }
