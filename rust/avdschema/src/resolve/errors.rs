@@ -13,7 +13,7 @@ use super::walker::SchemaWalkError;
 pub enum SchemaResolverError {
     SchemaType(SchemaType),
     RefSyntax(RefSyntax),
-    RefRegexError(RefRegexError),
+    RefRegex(RefRegexError),
     SchemaPath(SchemaPath),
     SchemaStoreError(SchemaStoreError),
     SchemaWalkError(SchemaWalkError),

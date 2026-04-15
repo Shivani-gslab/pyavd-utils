@@ -143,6 +143,6 @@ mod tests {
             "Regex error for schema $ref 'some_schema#/keys/key': BacktrackLimitExceeded."
         );
         let resolver_err: SchemaResolverError = err.into();
-        assert!(matches!(resolver_err, SchemaResolverError::RefRegexError(_)));
+        assert!(matches!(resolver_err, SchemaResolverError::RefRegex(_)));
     }
 }
