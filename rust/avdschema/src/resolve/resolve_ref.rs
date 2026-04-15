@@ -4,7 +4,7 @@
 
 use std::sync::LazyLock;
 
-use crate::resolve::errors::{RefRegexError, RefSyntax, SchemaResolverError};
+use crate::resolve::errors::{RefRegex, RefSyntax, SchemaResolverError};
 use crate::{Store, any::AnySchema};
 use fancy_regex::Regex;
 
@@ -23,7 +23,7 @@ pub fn resolve_ref<'a>(ref_: &str, store: &'a Store) -> Result<&'a AnySchema, Sc
     };
     let captures = REF_REGEX
         .captures(ref_)
-        .map_err(|e| RefRegexError::new(ref_.to_owned(), e.to_string()))?
+        .map_err(|e| RefRegex::new(ref_.to_owned(), e.to_string()))?
         .ok_or_else(syntax_err)?;
     let schema_name = captures.get(1).ok_or_else(syntax_err)?.as_str();
     let schema_path = captures.get(2).ok_or_else(syntax_err)?.as_str();
@@ -35,7 +35,7 @@ pub fn resolve_ref<'a>(ref_: &str, store: &'a Store) -> Result<&'a AnySchema, Sc
 
 #[cfg(test)]
 mod tests {
-    use crate::resolve::errors::{RefRegexError, SchemaResolverError};
+    use crate::resolve::errors::{RefRegex, SchemaResolverError};
     use crate::store::SchemaStoreError;
     use crate::str::Str;
 
@@ -133,11 +133,11 @@ mod tests {
     #[test]
     // REF_REGEX contains no fancy features (no lookaheads, lookbehinds, or backreferences),
     // so fancy_regex delegates it to the regex crate's NFA engine, which never returns Err.
-    // A runtime test triggering RefRegexError via resolve_ref() is therefore not possible
+    // A runtime test triggering RefRegex via resolve_ref() is therefore not possible
     // without injecting a different regex. We verify the error type, display format, and
     // From conversion here instead.
     fn ref_regex_error_display() {
-        let err = RefRegexError::new("some_schema#/keys/key".to_owned(), "BacktrackLimitExceeded".to_owned());
+        let err = RefRegex::new("some_schema#/keys/key".to_owned(), "BacktrackLimitExceeded".to_owned());
         assert_eq!(
             err.to_string(),
             "Regex error for schema $ref 'some_schema#/keys/key': BacktrackLimitExceeded."
