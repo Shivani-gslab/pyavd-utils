@@ -71,14 +71,16 @@ fn validate_max_length(schema: &Str, input: &str, ctx: &mut Context) {
 
 fn validate_pattern(schema: &Str, input: &str, ctx: &mut Context) {
     if let Some(pattern) = &schema.pattern {
-        let regex_pattern = pattern.get_compiled_pattern();
-        match regex_pattern.is_match(input) {
-            Ok(true) => {}
-            Ok(false) => ctx.add_error(Violation::NotMatchingPattern {
-                pattern: pattern.to_string(),
-                found: input.into(),
-            }),
+        match pattern.get_compiled_pattern() {
             Err(e) => ctx.add_error(ErrorIssue::InternalError { message: e.to_string() }),
+            Ok(regex_pattern) => match regex_pattern.is_match(input) {
+                Ok(true) => {}
+                Ok(false) => ctx.add_error(Violation::NotMatchingPattern {
+                    pattern: pattern.to_string(),
+                    found: input.into(),
+                }),
+                Err(e) => ctx.add_error(ErrorIssue::InternalError { message: e.to_string() }),
+            },
         }
     }
 }
