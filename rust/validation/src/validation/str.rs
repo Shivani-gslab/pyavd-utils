@@ -492,4 +492,33 @@ mod tests {
             }]
         );
     }
+
+    #[test]
+    fn validate_pattern_invalid_regex_internal_error() {
+        // An unterminated character class is rejected by fancy-regex at compile time.
+        let pattern_str = "[invalid";
+        let schema = Str {
+            pattern: Some(pattern_str.into()),
+            ..Default::default()
+        };
+        let input: Value = "foo".into();
+        let store = get_test_store();
+        let mut ctx = Context::new(&store, None);
+        let _ = schema.validate(&input, &mut ctx);
+        assert!(ctx.result.infos.is_empty());
+        assert_eq!(ctx.result.errors.len(), 1);
+        match &ctx.result.errors[0].issue {
+            ErrorIssue::InternalError { message } => {
+                assert!(
+                    message.starts_with("Schema contains an invalid regex pattern '"),
+                    "unexpected message prefix: {message}"
+                );
+                assert!(
+                    message.contains(pattern_str),
+                    "message should include the offending pattern: {message}"
+                );
+            }
+            other => panic!("expected InternalError, got {other:?}"),
+        }
+    }
 }
