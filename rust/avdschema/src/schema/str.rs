@@ -85,7 +85,7 @@ impl<'x> TryFrom<&'x AnySchema> for &'x Str {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, derive_more::Display)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_more::Display)]
 #[display("{pattern}")]
 #[serde(transparent)]
 pub struct Pattern {
@@ -93,11 +93,7 @@ pub struct Pattern {
     #[serde(skip)]
     compiled_pattern: OnceLock<Result<Regex, fancy_regex::Error>>,
 }
-impl Clone for Pattern {
-    fn clone(&self) -> Self {
-        Self::new(self.pattern.clone())
-    }
-}
+
 impl Pattern {
     fn new(pattern: String) -> Self {
         Self {

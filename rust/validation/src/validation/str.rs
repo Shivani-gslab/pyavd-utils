@@ -120,16 +120,27 @@ fn validate_pattern<V: ValidatableValue>(schema: &Str, value: &V, input: &str, c
             Err(e) => ctx.add_error_for(
                 value,
                 ErrorIssue::InternalError {
-                    message: format!("Schema contains an invalid regex pattern '{}': {e}", pattern),
+                    message: format!(
+                        "Schema contains an invalid regex pattern '{}': {e}",
+                        pattern
+                    ),
                 },
             ),
             Ok(regex_pattern) => match regex_pattern.is_match(input) {
                 Ok(true) => {}
-                Ok(false) => ctx.add_error_for(value, Violation::NotMatchingPattern {
-                    pattern: pattern.to_string(),
-                    found: input.into(),
-                }),
-                Err(e) => ctx.add_error_for(value, ErrorIssue::InternalError { message: e.to_string() }),
+                Ok(false) => ctx.add_error_for(
+                    value,
+                    Violation::NotMatchingPattern {
+                        pattern: pattern.to_string(),
+                        found: input.into(),
+                    },
+                ),
+                Err(e) => ctx.add_error_for(
+                    value,
+                    ErrorIssue::InternalError {
+                        message: e.to_string(),
+                    },
+                ),
             },
         }
     }
