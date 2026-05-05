@@ -10,9 +10,8 @@ use pyo3::pymodule;
 mod passwords {
 
     use pyo3::{
-        Bound, PyAny, PyResult,
+        PyResult,
         exceptions::{PyRuntimeError, PyValueError},
-        prelude::PyAnyMethods,
         pyfunction,
     };
 
@@ -70,24 +69,13 @@ mod passwords {
     #[pyfunction]
     /// Encrypt (obfuscate) a password with insecure type-7.
     ///
-    /// Raises ValueError if password is not a non-empty string or salt is not an integer in 0-15.
-    pub fn simple_7_encrypt(data: Bound<'_, PyAny>, salt: Bound<'_, PyAny>) -> PyResult<String> {
-        let data_str: String = data
-            .extract()
-            .map_err(|_| PyValueError::new_err("Password MUST be a string with at least 1 character."))?;
-        if data_str.is_empty() {
-            return Err(PyValueError::new_err("Password MUST be a string with at least 1 character."));
-        }
-
-        let salt_val: i64 = salt
-            .extract()
-            .map_err(|_| PyValueError::new_err("Salt MUST be an integer within the range 0-15."))?;
-        if !(0..=15).contains(&salt_val) {
-            return Err(PyValueError::new_err("Salt MUST be an integer within the range 0-15."));
-        }
-
-        passwords::simple_7_encrypt(&data_str, Some(salt_val as u8)).map_err(|err| match err {
-            passwords::Simple7Error::InvalidSaltValue(_) => PyValueError::new_err(err.to_string()),
+    /// If salt is None, a random salt in the range 0-15 will be used.
+    /// Raises ValueError if the password is empty or the salt is out of range.
+    pub fn simple_7_encrypt(data: String, salt: Option<u8>) -> PyResult<String> {
+        passwords::simple_7_encrypt(&data, salt).map_err(|err| match err {
+            passwords::Simple7Error::InvalidSaltValue(_) | passwords::Simple7Error::EmptyPassword => {
+                PyValueError::new_err(err.to_string())
+            }
             _ => PyRuntimeError::new_err(err.to_string()),
         })
     }
@@ -96,16 +84,9 @@ mod passwords {
     #[pyfunction]
     /// Decrypt (deobfuscate) a password from insecure type-7.
     ///
-    /// Raises ValueError if password is not a non-empty string or decryption fails.
-    pub fn simple_7_decrypt(data: Bound<'_, PyAny>) -> PyResult<String> {
-        let data_str: String = data
-            .extract()
-            .map_err(|_| PyValueError::new_err("Password MUST be a string with at least 1 character."))?;
-        if data_str.is_empty() {
-            return Err(PyValueError::new_err("Password MUST be a string with at least 1 character."));
-        }
-
-        passwords::simple_7_decrypt(&data_str).map_err(|err| match err {
+    /// Raises ValueError if the password is empty or decryption fails.
+    pub fn simple_7_decrypt(data: String) -> PyResult<String> {
+        passwords::simple_7_decrypt(&data).map_err(|err| match err {
             passwords::Simple7Error::InvalidUtf8(_) => PyRuntimeError::new_err(err.to_string()),
             _ => PyValueError::new_err(err.to_string()),
         })

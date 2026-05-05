@@ -25,6 +25,9 @@ impl std::error::Error for Simple7Error {}
 
 /// Decrypt (deobfuscate) a password from insecure type-7.
 pub fn simple_7_decrypt(data: &str) -> Result<String, Simple7Error> {
+    if data.is_empty() {
+        return Err(Simple7Error::EmptyPassword);
+    }
     if data.len() < 2 {
         return Err(Simple7Error::DataTooShort);
     }
@@ -50,8 +53,11 @@ pub fn simple_7_decrypt(data: &str) -> Result<String, Simple7Error> {
 /// Encrypt (obfuscate) a password with insecure type-7.
 ///
 /// If `salt` is `None`, a random salt in the range 0-15 will be used.
-/// Returns an error if the provided salt is not in the range 0-15.
+/// Returns an error if the provided salt is not in the range 0-15, or if `data` is empty.
 pub fn simple_7_encrypt(data: &str, salt: Option<u8>) -> Result<String, Simple7Error> {
+    if data.is_empty() {
+        return Err(Simple7Error::EmptyPassword);
+    }
     let salt = match salt {
         Some(s) if s > 15 => return Err(Simple7Error::InvalidSaltValue(s)),
         Some(s) => s,
@@ -142,10 +148,19 @@ mod tests {
     }
 
     #[test]
-    fn test_simple_7_decrypt_data_too_short() {
-        let result = simple_7_decrypt("");
-        assert!(matches!(result.unwrap_err(), Simple7Error::DataTooShort));
+    fn test_simple_7_encrypt_empty_password() {
+        let result = simple_7_encrypt("", Some(5));
+        assert!(matches!(result.unwrap_err(), Simple7Error::EmptyPassword));
+    }
 
+    #[test]
+    fn test_simple_7_decrypt_empty_password() {
+        let result = simple_7_decrypt("");
+        assert!(matches!(result.unwrap_err(), Simple7Error::EmptyPassword));
+    }
+
+    #[test]
+    fn test_simple_7_decrypt_data_too_short() {
         let result = simple_7_decrypt("0");
         assert!(matches!(result.unwrap_err(), Simple7Error::DataTooShort));
     }

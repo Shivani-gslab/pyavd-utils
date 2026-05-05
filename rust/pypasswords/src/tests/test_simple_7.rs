@@ -27,19 +27,47 @@ fn simple_7_encrypt_decrypt_roundtrip() {
 }
 
 #[test]
-fn simple_7_encrypt_none_salt_err() {
+fn simple_7_encrypt_with_random_salt() {
     with_passwords_module(|py, module| {
         let password = "test_password";
 
-        let err = module
+        // Call with None for salt
+        let encrypted: String = module
             .call_method1("simple_7_encrypt", (password, py.None()))
+            .unwrap()
+            .extract()
+            .unwrap();
+
+        // Should be able to decrypt it
+        let decrypted: String = module
+            .call_method1("simple_7_decrypt", (encrypted,))
+            .unwrap()
+            .extract()
+            .unwrap();
+
+        assert_eq!(decrypted, password);
+    });
+}
+
+#[test]
+fn simple_7_encrypt_empty_password_err() {
+    with_passwords_module(|py, module| {
+        let err = module
+            .call_method1("simple_7_encrypt", ("", Some(5u8)))
             .unwrap_err();
 
         assert!(err.is_instance_of::<pyo3::exceptions::PyValueError>(py));
-        assert_eq!(
-            err.value(py).to_string(),
-            "Salt MUST be an integer within the range 0-15."
-        );
+        assert_eq!(err.value(py).to_string(), "Password must not be empty");
+    });
+}
+
+#[test]
+fn simple_7_decrypt_empty_password_err() {
+    with_passwords_module(|py, module| {
+        let err = module.call_method1("simple_7_decrypt", ("",)).unwrap_err();
+
+        assert!(err.is_instance_of::<pyo3::exceptions::PyValueError>(py));
+        assert_eq!(err.value(py).to_string(), "Password must not be empty");
     });
 }
 
@@ -53,10 +81,11 @@ fn simple_7_encrypt_invalid_salt_err() {
             .call_method1("simple_7_encrypt", (password, Some(invalid_salt)))
             .unwrap_err();
 
+        // Maps Simple7Error::InvalidSaltValue -> PyValueError
         assert!(err.is_instance_of::<pyo3::exceptions::PyValueError>(py));
         assert_eq!(
             err.value(py).to_string(),
-            "Salt MUST be an integer within the range 0-15."
+            "Salt must be in the range 0-15, got 16"
         );
     });
 }
