@@ -25,9 +25,6 @@ impl std::error::Error for Simple7Error {}
 
 /// Decrypt (deobfuscate) a password from insecure type-7.
 pub fn simple_7_decrypt(data: &str) -> Result<String, Simple7Error> {
-    if data.is_empty() {
-        return Err(Simple7Error::EmptyPassword);
-    }
     if data.len() < 2 {
         return Err(Simple7Error::DataTooShort);
     }
@@ -154,13 +151,10 @@ mod tests {
     }
 
     #[test]
-    fn test_simple_7_decrypt_empty_password() {
-        let result = simple_7_decrypt("");
-        assert!(matches!(result.unwrap_err(), Simple7Error::EmptyPassword));
-    }
-
-    #[test]
     fn test_simple_7_decrypt_data_too_short() {
+        let result = simple_7_decrypt("");
+        assert!(matches!(result.unwrap_err(), Simple7Error::DataTooShort));
+
         let result = simple_7_decrypt("0");
         assert!(matches!(result.unwrap_err(), Simple7Error::DataTooShort));
     }
