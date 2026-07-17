@@ -49,12 +49,15 @@ where
 #[serde(deny_unknown_fields)]
 pub struct Deprecation {
     /// Emit deprecation warning if key is set
+    #[serde(default = "default_true")]
     pub warning: bool,
     /// Relative path to new key
     pub new_key: Option<String>,
     /// Allow the deprecated key to be configured simultaneously with the new key
+    #[serde(default)]
     pub allow_with_new_key: Option<bool>,
     /// Support for this key has been removed
+    #[serde(default)]
     pub removed: Option<bool>,
     /// Version in which the key will be removed
     pub remove_in_version: Option<String>,
@@ -62,4 +65,24 @@ pub struct Deprecation {
     pub remove_after_date: Option<String>,
     /// URL detailing the deprecation and migration guidelines
     pub url: Option<String>,
+    /// Type of migration required (e.g., 'simple', 'complex')
+    #[serde(default = "migration_type_default")]
+    pub migration_type: Option<String>,
+    /// Whether a migration is required for this deprecated key
+    #[serde(default = "migration_required_default")]
+    pub migration_required: Option<bool>,
+    /// Optional custom transform handler in the form module.function or function name
+    pub custom_transform_handler: Option<String>,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn migration_type_default() -> Option<String> {
+    Some("simple".to_owned())
+}
+
+fn migration_required_default() -> Option<bool> {
+    Some(true)
 }
