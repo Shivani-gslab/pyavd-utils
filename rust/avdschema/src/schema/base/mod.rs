@@ -65,24 +65,10 @@ pub struct Deprecation {
     pub remove_after_date: Option<String>,
     /// URL detailing the deprecation and migration guidelines
     pub url: Option<String>,
-    /// Type of migration required (e.g., 'simple', 'complex')
-    #[serde(default = "migration_type_default")]
-    pub migration_type: Option<String>,
-    /// Whether a migration is required for this deprecated key
-    #[serde(default = "migration_required_default")]
-    pub migration_required: Option<bool>,
-    /// Optional custom transform handler in the form module.function or function name
-    pub custom_transform_handler: Option<String>,
+    /// Upgrade handler used to migrate deprecated data
+    pub upgrade_handler: Option<String>,
 }
 
 fn default_true() -> bool {
     true
-}
-
-fn migration_type_default() -> Option<String> {
-    Some("simple".to_owned())
-}
-
-fn migration_required_default() -> Option<bool> {
-    Some(true)
 }
