@@ -66,9 +66,14 @@ pub struct Deprecation {
     /// URL detailing the deprecation and migration guidelines
     pub url: Option<String>,
     /// Upgrade handler used to migrate deprecated data
+    #[serde(default = "upgrade_handler_default")]
     pub upgrade_handler: Option<String>,
 }
 
 fn default_true() -> bool {
     true
+}
+
+fn upgrade_handler_default() -> Option<String> {
+    Some("simple".to_owned())
 }
