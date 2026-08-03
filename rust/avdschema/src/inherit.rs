@@ -319,9 +319,9 @@ mod tests {
         assert!(deprecation.is_some());
         let dep = deprecation.unwrap();
         assert_eq!(dep.warning, true);
-        assert_eq!(dep.new_key, Some("new_field".to_string()));
-        assert_eq!(dep.remove_in_version, Some("10.0.0".to_string()));
+        assert_eq!(dep.new_key, Some("new_field".to_owned()));
+        assert_eq!(dep.remove_in_version, Some("10.0.0".to_owned()));
         assert_eq!(dep.removed, Some(true));
-        assert_eq!(dep.upgrade_handler, Some("simple".to_string()));
+        assert_eq!(dep.upgrade_handler, Some("simple".to_owned()));
     }
 }
