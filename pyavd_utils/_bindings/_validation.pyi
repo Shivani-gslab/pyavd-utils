@@ -36,6 +36,10 @@ class Violation:
     """String detailing the violation."""
     path: list[str]
     """Path to the data which the violation concerns."""
+    new_key: str | None
+    """Replacement key from the schema for a removed key violation."""
+    upgrade_handler: str | None
+    """Upgrade handler from the schema for a removed key violation."""
 
 class Deprecation:
     """Input data model is deprecated."""

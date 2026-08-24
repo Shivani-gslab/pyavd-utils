@@ -41,6 +41,8 @@ pub(crate) mod _validation {
     pub(crate) struct Violation {
         pub message: String,
         pub path: Vec<String>,
+        pub new_key: Option<String>,
+        pub upgrade_handler: Option<String>,
     }
 
     #[pyclass(from_py_object, frozen, get_all)]
@@ -120,6 +122,8 @@ pub(crate) mod _validation {
                         result.violations.push(Violation {
                             message: violation.to_string(),
                             path: feedback.path.into(),
+                            new_key: violation.new_key(),
+                            upgrade_handler: violation.upgrade_handler(),
                         });
                     }
                     ::validation::feedback::ErrorIssue::InternalError { message } => {

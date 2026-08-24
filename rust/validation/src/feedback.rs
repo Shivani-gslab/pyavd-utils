@@ -411,6 +411,24 @@ pub enum Violation {
     Removed(Removed),
 }
 
+impl Violation {
+    /// Return the replacement key from the schema when this violation concerns a removed key.
+    pub fn new_key(&self) -> Option<String> {
+        match self {
+            Self::Removed(removed) => removed.replacement.0.clone(),
+            _ => None,
+        }
+    }
+
+    /// Return the upgrade handler from the schema when this violation concerns a removed key.
+    pub fn upgrade_handler(&self) -> Option<String> {
+        match self {
+            Self::Removed(removed) => removed.upgrade_handler.clone(),
+            _ => None,
+        }
+    }
+}
+
 /// Data Type used in Violation.
 #[derive(Clone, Debug, PartialEq, Serialize, derive_more::Display)]
 pub enum Type {
@@ -531,6 +549,7 @@ pub struct Removed {
     pub replacement: ReplacementField,
     pub version: VersionField,
     pub url: UrlField,
+    pub upgrade_handler: Option<String>,
 }
 impl Removed {
     pub(crate) fn from_schema(path: &Path, deprecation: &avdschema::base::Deprecation) -> Self {
@@ -539,6 +558,7 @@ impl Removed {
             replacement: deprecation.new_key.clone().into(),
             version: deprecation.remove_in_version.clone().into(),
             url: deprecation.url.clone().into(),
+            upgrade_handler: deprecation.upgrade_handler.clone(),
         }
     }
 }
@@ -631,6 +651,7 @@ mod tests {
             replacement: Some("another_key".to_owned()).into(),
             version: Some("6.0.0".to_owned()).into(),
             url: Some("foo.bar".to_owned()).into(),
+            upgrade_handler: Some("simple".to_owned()),
         };
         assert_eq!(
             format!("{removed}").as_str(),
@@ -645,6 +666,7 @@ mod tests {
             removed: Some(true),
             remove_in_version: Some("6.0.0".to_owned()),
             url: Some("my.url".to_owned()),
+            upgrade_handler: Some("simple".to_owned()),
             ..Default::default()
         }
     }
@@ -671,8 +693,12 @@ mod tests {
             replacement: Some("new_key".to_owned()).into(),
             version: Some("6.0.0".to_owned()).into(),
             url: Some("my.url".to_owned()).into(),
+            upgrade_handler: Some("simple".to_owned()),
         };
         assert_eq!(removed, expected_removed);
+        let violation = Violation::Removed(removed);
+        assert_eq!(violation.new_key(), Some("new_key".to_owned()));
+        assert_eq!(violation.upgrade_handler(), Some("simple".to_owned()));
     }
 
     #[test]
