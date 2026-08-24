@@ -26,6 +26,8 @@ fn validation_result_from_validation_result_maps_violation() {
     assert_eq!(py_result.violations.len(), 1);
     assert_eq!(py_result.violations[0].path, vec!["foo"]);
     assert_eq!(py_result.violations[0].message, "Invalid key.");
+    assert_eq!(py_result.violations[0].new_key, None);
+    assert_eq!(py_result.violations[0].upgrade_handler, None);
     assert!(py_result.deprecations.is_empty());
     assert!(py_result.ignored_eos_config_keys.is_empty());
 }
