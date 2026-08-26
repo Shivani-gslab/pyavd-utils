@@ -36,10 +36,18 @@ class Violation:
     """String detailing the violation."""
     path: list[str]
     """Path to the data which the violation concerns."""
+
+class RemovedDataModel:
+    """Input data uses a model which has been removed from the schema."""
+
+    message: str
+    """String detailing the removal."""
+    path: list[str]
+    """Path to the removed data model."""
     new_key: str | None
-    """Replacement key from the schema for a removed key violation."""
+    """Replacement key from the schema."""
     upgrade_handler: str | None
-    """Upgrade handler from the schema for a removed key violation."""
+    """Upgrade handler from the schema."""
 
 class Deprecation:
     """Input data model is deprecated."""
@@ -68,7 +76,7 @@ class IgnoredEosConfigKey:
 class ValidationResult:
     """Result of data validation."""
 
-    violations: list[Violation]
+    violations: list[Violation | RemovedDataModel]
     deprecations: list[Deprecation]
     ignored_eos_config_keys: list[IgnoredEosConfigKey]
 

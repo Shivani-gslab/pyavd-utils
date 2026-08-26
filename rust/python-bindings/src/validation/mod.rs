@@ -3,6 +3,8 @@
 // that can be found in the LICENSE file.
 
 #[cfg(test)]
+pub(crate) use _validation::ValidationIssue;
+#[cfg(test)]
 pub(crate) use _validation::ValidationResult;
 #[cfg(test)]
 pub(crate) use _validation::first_input_diagnostic_as_pyerr;
@@ -16,6 +18,7 @@ pub(crate) mod _validation {
     use ::validation::feedback::InputDiagnostic;
     use avdschema::any::AnySchema;
     use log::debug;
+    use pyo3::IntoPyObject;
     use pyo3::PyResult;
     use pyo3::exceptions::PyRuntimeError;
     use pyo3::pyclass;
@@ -41,8 +44,23 @@ pub(crate) mod _validation {
     pub(crate) struct Violation {
         pub message: String,
         pub path: Vec<String>,
+    }
+
+    #[pyclass(from_py_object, frozen, get_all)]
+    #[derive(Clone)]
+    pub(crate) struct RemovedDataModel {
+        pub message: String,
+        pub path: Vec<String>,
         pub new_key: Option<String>,
         pub upgrade_handler: Option<String>,
+    }
+
+    #[derive(Clone, IntoPyObject)]
+    pub(crate) enum ValidationIssue {
+        #[pyo3(transparent)]
+        Violation(Violation),
+        #[pyo3(transparent)]
+        RemovedDataModel(RemovedDataModel),
     }
 
     #[pyclass(from_py_object, frozen, get_all)]
@@ -106,7 +124,7 @@ pub(crate) mod _validation {
     #[pyclass(from_py_object, frozen, get_all)]
     #[derive(Clone, Default)]
     pub(crate) struct ValidationResult {
-        pub violations: Vec<Violation>,
+        pub violations: Vec<ValidationIssue>,
         pub deprecations: Vec<Deprecation>,
         pub ignored_eos_config_keys: Vec<IgnoredEosConfigKey>,
     }
@@ -119,12 +137,22 @@ pub(crate) mod _validation {
             for feedback in value.errors {
                 match feedback.issue {
                     ::validation::feedback::ErrorIssue::Violation(violation) => {
-                        result.violations.push(Violation {
-                            message: violation.to_string(),
-                            path: feedback.path.into(),
-                            new_key: violation.new_key(),
-                            upgrade_handler: violation.upgrade_handler(),
-                        });
+                        result
+                            .violations
+                            .push(ValidationIssue::Violation(Violation {
+                                message: violation.to_string(),
+                                path: feedback.path.into(),
+                            }));
+                    }
+                    ::validation::feedback::ErrorIssue::RemovedDataModel(removed_data_model) => {
+                        result.violations.push(ValidationIssue::RemovedDataModel(
+                            RemovedDataModel {
+                                message: removed_data_model.to_string(),
+                                path: feedback.path.into(),
+                                new_key: removed_data_model.replacement.into(),
+                                upgrade_handler: removed_data_model.upgrade_handler,
+                            },
+                        ));
                     }
                     ::validation::feedback::ErrorIssue::InternalError { message } => {
                         return Err(PyRuntimeError::new_err(format!(

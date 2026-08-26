@@ -133,6 +133,8 @@ pub enum InputDiagnostic {
 pub enum ErrorIssue {
     /// Violation found during validation.
     Violation(Violation),
+    /// Use of a data model which has been removed.
+    RemovedDataModel(RemovedDataModel),
     /// Some internal error occurred.
     #[display("An internal error occurred: {message}.")]
     InternalError { message: String },
@@ -407,26 +409,6 @@ pub enum Violation {
         "The input data model is deprecated and cannot be used in conjunction with the new data model '{other_path}'.{url}"
     )]
     DeprecatedConflict { other_path: Path, url: UrlField },
-    /// Removed after deprecation of data model.
-    Removed(Removed),
-}
-
-impl Violation {
-    /// Return the replacement key from the schema when this violation concerns a removed key.
-    pub fn new_key(&self) -> Option<String> {
-        match self {
-            Self::Removed(removed) => removed.replacement.0.clone(),
-            _ => None,
-        }
-    }
-
-    /// Return the upgrade handler from the schema when this violation concerns a removed key.
-    pub fn upgrade_handler(&self) -> Option<String> {
-        match self {
-            Self::Removed(removed) => removed.upgrade_handler.clone(),
-            _ => None,
-        }
-    }
 }
 
 /// Data Type used in Violation.
@@ -543,20 +525,20 @@ impl Deprecated {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, derive_more::Display)]
-#[display("The input data model '{path}' was removed{version}.{replacement}{url}")]
-pub struct Removed {
+#[display("The input data model '{path}' was removed{removed_in_version}.{replacement}{url}")]
+pub struct RemovedDataModel {
     pub path: Path,
     pub replacement: ReplacementField,
-    pub version: VersionField,
+    pub removed_in_version: VersionField,
     pub url: UrlField,
     pub upgrade_handler: Option<String>,
 }
-impl Removed {
+impl RemovedDataModel {
     pub(crate) fn from_schema(path: &Path, deprecation: &avdschema::base::Deprecation) -> Self {
         Self {
             path: path.to_owned(),
             replacement: deprecation.new_key.clone().into(),
-            version: deprecation.remove_in_version.clone().into(),
+            removed_in_version: deprecation.remove_in_version.clone().into(),
             url: deprecation.url.clone().into(),
             upgrade_handler: deprecation.upgrade_handler.clone(),
         }
@@ -646,10 +628,10 @@ mod tests {
 
     #[test]
     fn removed_display() {
-        let removed = Removed {
+        let removed = RemovedDataModel {
             path: Path::from(vec!["key".to_owned(), "1".to_owned(), "subkey".to_owned()]),
             replacement: Some("another_key".to_owned()).into(),
-            version: Some("6.0.0".to_owned()).into(),
+            removed_in_version: Some("6.0.0".to_owned()).into(),
             url: Some("foo.bar".to_owned()).into(),
             upgrade_handler: Some("simple".to_owned()),
         };
@@ -686,19 +668,20 @@ mod tests {
 
     #[test]
     fn removed_from_schema() {
-        let removed =
-            Removed::from_schema(&Path::from_iter(["foo"]), &get_deprecation_test_schema());
-        let expected_removed = Removed {
+        let removed = RemovedDataModel::from_schema(
+            &Path::from_iter(["foo"]),
+            &get_deprecation_test_schema(),
+        );
+        let expected_removed = RemovedDataModel {
             path: Path::from(vec!["foo".to_owned()]),
             replacement: Some("new_key".to_owned()).into(),
-            version: Some("6.0.0".to_owned()).into(),
+            removed_in_version: Some("6.0.0".to_owned()).into(),
             url: Some("my.url".to_owned()).into(),
             upgrade_handler: Some("simple".to_owned()),
         };
         assert_eq!(removed, expected_removed);
-        let violation = Violation::Removed(removed);
-        assert_eq!(violation.new_key(), Some("new_key".to_owned()));
-        assert_eq!(violation.upgrade_handler(), Some("simple".to_owned()));
+        assert_eq!(removed.replacement.0, Some("new_key".to_owned()));
+        assert_eq!(removed.upgrade_handler, Some("simple".to_owned()));
     }
 
     #[test]

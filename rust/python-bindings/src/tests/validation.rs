@@ -6,11 +6,14 @@ use pyo3::types::PyAnyMethods as _;
 
 use super::get_path_and_message_from_py_violation;
 use super::setup;
+use super::setup_python;
+use crate::validation::ValidationIssue;
 use crate::validation::ValidationResult;
 use crate::validation::first_input_diagnostic_as_pyerr;
 
 #[test]
 fn validation_result_from_validation_result_maps_violation() {
+    setup_python();
     let result = ::validation::ValidationResult {
         errors: vec![::validation::feedback::Feedback {
             path: vec!["foo".into()].into(),
@@ -24,12 +27,118 @@ fn validation_result_from_validation_result_maps_violation() {
     let py_result = ValidationResult::from_validation_result(result).unwrap();
 
     assert_eq!(py_result.violations.len(), 1);
-    assert_eq!(py_result.violations[0].path, vec!["foo"]);
-    assert_eq!(py_result.violations[0].message, "Invalid key.");
-    assert_eq!(py_result.violations[0].new_key, None);
-    assert_eq!(py_result.violations[0].upgrade_handler, None);
+    let ValidationIssue::Violation(violation) = &py_result.violations[0] else {
+        panic!("expected violation");
+    };
+    assert_eq!(violation.path, vec!["foo"]);
+    assert_eq!(violation.message, "Invalid key.");
     assert!(py_result.deprecations.is_empty());
     assert!(py_result.ignored_eos_config_keys.is_empty());
+
+    pyo3::Python::attach(|py| {
+        use pyo3::types::PyListMethods as _;
+
+        let py_validation_result = pyo3::Bound::new(py, py_result).unwrap();
+        let violations = py_validation_result
+            .getattr("violations")
+            .unwrap()
+            .cast_into::<pyo3::types::PyList>()
+            .unwrap();
+        let py_violation = violations.get_item(0).unwrap();
+        assert!(py_violation.getattr("new_key").is_err());
+        assert!(py_violation.getattr("upgrade_handler").is_err());
+    });
+}
+
+#[test]
+fn validation_result_from_validation_result_maps_removed_data_model() {
+    setup_python();
+    let result = ::validation::ValidationResult {
+        errors: vec![
+            ::validation::feedback::Feedback {
+                path: vec!["old_key".into()].into(),
+                span: None,
+                issue: ::validation::feedback::RemovedDataModel {
+                    path: vec!["old_key".into()].into(),
+                    replacement: Some("new_key".to_owned()).into(),
+                    removed_in_version: Some("6.0.0".to_owned()).into(),
+                    url: None.into(),
+                    upgrade_handler: Some("simple".to_owned()),
+                }
+                .into(),
+            },
+            ::validation::feedback::Feedback {
+                path: vec!["old_key_without_metadata".into()].into(),
+                span: None,
+                issue: ::validation::feedback::RemovedDataModel {
+                    path: vec!["old_key_without_metadata".into()].into(),
+                    replacement: None.into(),
+                    removed_in_version: None.into(),
+                    url: None.into(),
+                    upgrade_handler: None,
+                }
+                .into(),
+            },
+        ],
+        warnings: vec![],
+        infos: vec![],
+    };
+
+    let py_result = ValidationResult::from_validation_result(result).unwrap();
+
+    let ValidationIssue::RemovedDataModel(removed_data_model) = &py_result.violations[0] else {
+        panic!("expected removed data model");
+    };
+    assert_eq!(removed_data_model.path, vec!["old_key"]);
+    assert_eq!(removed_data_model.new_key.as_deref(), Some("new_key"));
+    assert_eq!(
+        removed_data_model.upgrade_handler.as_deref(),
+        Some("simple")
+    );
+
+    pyo3::Python::attach(|py| {
+        use pyo3::types::PyListMethods as _;
+
+        let py_validation_result = pyo3::Bound::new(py, py_result).unwrap();
+        let violations = py_validation_result
+            .getattr("violations")
+            .unwrap()
+            .cast_into::<pyo3::types::PyList>()
+            .unwrap();
+        let py_removed_data_model = violations.get_item(0).unwrap();
+        assert_eq!(
+            py_removed_data_model
+                .getattr("new_key")
+                .unwrap()
+                .extract::<String>()
+                .unwrap(),
+            "new_key"
+        );
+        assert_eq!(
+            py_removed_data_model
+                .getattr("upgrade_handler")
+                .unwrap()
+                .extract::<String>()
+                .unwrap(),
+            "simple"
+        );
+        assert!(py_removed_data_model.getattr("path").is_ok());
+        assert!(py_removed_data_model.getattr("message").is_ok());
+
+        let py_removed_data_model_without_metadata = violations.get_item(1).unwrap();
+        assert!(
+            py_removed_data_model_without_metadata
+                .getattr("new_key")
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            py_removed_data_model_without_metadata
+                .getattr("upgrade_handler")
+                .unwrap()
+                .is_none()
+        );
+    });
 }
 
 #[test]

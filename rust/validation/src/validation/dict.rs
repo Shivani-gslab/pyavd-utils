@@ -13,7 +13,7 @@ use super::Validation;
 use crate::context::Context;
 use crate::feedback::Deprecated;
 use crate::feedback::IgnoredEosConfigKey;
-use crate::feedback::Removed;
+use crate::feedback::RemovedDataModel;
 use crate::feedback::Type;
 use crate::feedback::Violation;
 use crate::validatable::ValidatableMapping;
@@ -255,7 +255,7 @@ fn check_deprecation<'a, M: ValidatableMapping<'a>>(
         if deprecation.removed.unwrap_or_default() {
             ctx.add_error_with_span(
                 key_span,
-                Violation::Removed(Removed::from_schema(&ctx.state.path, deprecation)),
+                RemovedDataModel::from_schema(&ctx.state.path, deprecation),
             );
             true
         } else {
@@ -318,6 +318,7 @@ mod tests {
     use crate::context::Configuration;
     use crate::context::Context;
     use crate::feedback::CoercionNote;
+    use crate::feedback::ErrorIssue;
     use crate::feedback::Feedback;
     use crate::feedback::SourceSpan;
     use crate::feedback::WarningIssue;
@@ -1147,14 +1148,13 @@ mod tests {
             vec![Feedback {
                 path: vec!["foo".into()].into(),
                 span: None,
-                issue: Violation::Removed(Removed {
+                issue: ErrorIssue::RemovedDataModel(RemovedDataModel {
                     path: vec!["foo".into()].into(),
                     replacement: None.into(),
-                    version: None.into(),
+                    removed_in_version: None.into(),
                     url: None.into(),
                     upgrade_handler: None,
                 })
-                .into()
             }]
         );
     }
