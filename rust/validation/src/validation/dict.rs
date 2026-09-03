@@ -13,7 +13,7 @@ use super::Validation;
 use crate::context::Context;
 use crate::feedback::Deprecated;
 use crate::feedback::IgnoredEosConfigKey;
-use crate::feedback::RemovedDataModel;
+use crate::feedback::Removed;
 use crate::feedback::Type;
 use crate::feedback::Violation;
 use crate::validatable::ValidatableMapping;
@@ -255,7 +255,7 @@ fn check_deprecation<'a, M: ValidatableMapping<'a>>(
         if deprecation.removed.unwrap_or_default() {
             ctx.add_error_with_span(
                 key_span,
-                RemovedDataModel::from_schema(&ctx.state.path, deprecation),
+                Violation::Removed(Removed::from_schema(&ctx.state.path, deprecation)),
             );
             true
         } else {
@@ -318,7 +318,6 @@ mod tests {
     use crate::context::Configuration;
     use crate::context::Context;
     use crate::feedback::CoercionNote;
-    use crate::feedback::ErrorIssue;
     use crate::feedback::Feedback;
     use crate::feedback::SourceSpan;
     use crate::feedback::WarningIssue;
@@ -1059,7 +1058,8 @@ mod tests {
                     path: vec!["foo".into()].into(),
                     replacement: None.into(),
                     version: Some("1.2.3".into()).into(),
-                    url: None.into()
+                    url: None.into(),
+                    upgrade_handler: None,
                 })
             }]
         );
@@ -1110,7 +1110,8 @@ mod tests {
                     path: vec!["foo".into()].into(),
                     replacement: None.into(),
                     version: Some("1.2.3".into()).into(),
-                    url: None.into()
+                    url: None.into(),
+                    upgrade_handler: None,
                 })
             }]
         );
@@ -1148,13 +1149,14 @@ mod tests {
             vec![Feedback {
                 path: vec!["foo".into()].into(),
                 span: None,
-                issue: ErrorIssue::RemovedDataModel(RemovedDataModel {
+                issue: Violation::Removed(Removed {
                     path: vec!["foo".into()].into(),
                     replacement: None.into(),
-                    removed_in_version: None.into(),
+                    version: None.into(),
                     url: None.into(),
                     upgrade_handler: None,
                 })
+                .into()
             }]
         );
     }
@@ -1220,7 +1222,8 @@ mod tests {
                     path: vec!["old_key".into()].into(),
                     replacement: Some("new_key".into()).into(),
                     version: Some("2.0.0".into()).into(),
-                    url: None.into()
+                    url: None.into(),
+                    upgrade_handler: None,
                 })
             }]
         );
@@ -1264,7 +1267,8 @@ mod tests {
                     path: vec!["old_key".into()].into(),
                     replacement: Some("new_key".into()).into(),
                     version: Some("2.0.0".into()).into(),
-                    url: None.into()
+                    url: None.into(),
+                    upgrade_handler: None,
                 })
             }]
         );
@@ -1319,7 +1323,8 @@ mod tests {
                     path: vec!["old_key".into()].into(),
                     replacement: Some("new_key".into()).into(),
                     version: Some("2.0.0".into()).into(),
-                    url: None.into()
+                    url: None.into(),
+                    upgrade_handler: None,
                 })
             }]
         );
@@ -1381,7 +1386,8 @@ mod tests {
                     path: vec!["old_key".into()].into(),
                     replacement: Some("methods.group".into()).into(),
                     version: Some("2.0.0".into()).into(),
-                    url: None.into()
+                    url: None.into(),
+                    upgrade_handler: None,
                 })
             }]
         );
@@ -1731,6 +1737,7 @@ mod tests {
                     replacement: None.into(),
                     version: Some("1.2.3".into()).into(),
                     url: None.into(),
+                    upgrade_handler: None,
                 })
             }]
         );

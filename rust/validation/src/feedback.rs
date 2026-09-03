@@ -133,8 +133,6 @@ pub enum InputDiagnostic {
 pub enum ErrorIssue {
     /// Violation found during validation.
     Violation(Violation),
-    /// Use of a data model which has been removed.
-    RemovedDataModel(RemovedDataModel),
     /// Some internal error occurred.
     #[display("An internal error occurred: {message}.")]
     InternalError { message: String },
@@ -409,6 +407,8 @@ pub enum Violation {
         "The input data model is deprecated and cannot be used in conjunction with the new data model '{other_path}'.{url}"
     )]
     DeprecatedConflict { other_path: Path, url: UrlField },
+    /// Removed after deprecation of data model.
+    Removed(Removed),
 }
 
 /// Data Type used in Violation.
@@ -512,6 +512,7 @@ pub struct Deprecated {
     pub replacement: ReplacementField,
     pub version: VersionField,
     pub url: UrlField,
+    pub upgrade_handler: Option<String>,
 }
 impl Deprecated {
     pub(crate) fn from_schema(path: &Path, deprecation: &avdschema::base::Deprecation) -> Self {
@@ -520,25 +521,26 @@ impl Deprecated {
             replacement: deprecation.new_key.clone().into(),
             version: deprecation.remove_in_version.clone().into(),
             url: deprecation.url.clone().into(),
+            upgrade_handler: deprecation.upgrade_handler.clone(),
         }
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, derive_more::Display)]
-#[display("The input data model '{path}' was removed{removed_in_version}.{replacement}{url}")]
-pub struct RemovedDataModel {
+#[display("The input data model '{path}' was removed{version}.{replacement}{url}")]
+pub struct Removed {
     pub path: Path,
     pub replacement: ReplacementField,
-    pub removed_in_version: VersionField,
+    pub version: VersionField,
     pub url: UrlField,
     pub upgrade_handler: Option<String>,
 }
-impl RemovedDataModel {
+impl Removed {
     pub(crate) fn from_schema(path: &Path, deprecation: &avdschema::base::Deprecation) -> Self {
         Self {
             path: path.to_owned(),
             replacement: deprecation.new_key.clone().into(),
-            removed_in_version: deprecation.remove_in_version.clone().into(),
+            version: deprecation.remove_in_version.clone().into(),
             url: deprecation.url.clone().into(),
             upgrade_handler: deprecation.upgrade_handler.clone(),
         }
@@ -619,6 +621,7 @@ mod tests {
             replacement: Some("another_key".to_owned()).into(),
             version: Some("6.0.0".to_owned()).into(),
             url: Some("foo.bar".to_owned()).into(),
+            upgrade_handler: Some("simple".to_owned()),
         };
         assert_eq!(
             format!("{deprecated}").as_str(),
@@ -628,10 +631,10 @@ mod tests {
 
     #[test]
     fn removed_display() {
-        let removed = RemovedDataModel {
+        let removed = Removed {
             path: Path::from(vec!["key".to_owned(), "1".to_owned(), "subkey".to_owned()]),
             replacement: Some("another_key".to_owned()).into(),
-            removed_in_version: Some("6.0.0".to_owned()).into(),
+            version: Some("6.0.0".to_owned()).into(),
             url: Some("foo.bar".to_owned()).into(),
             upgrade_handler: Some("simple".to_owned()),
         };
@@ -662,20 +665,19 @@ mod tests {
             replacement: Some("new_key".to_owned()).into(),
             version: Some("6.0.0".to_owned()).into(),
             url: Some("my.url".to_owned()).into(),
+            upgrade_handler: Some("simple".to_owned()),
         };
         assert_eq!(deprecated, expected_deprecated);
     }
 
     #[test]
     fn removed_from_schema() {
-        let removed = RemovedDataModel::from_schema(
-            &Path::from_iter(["foo"]),
-            &get_deprecation_test_schema(),
-        );
-        let expected_removed = RemovedDataModel {
+        let removed =
+            Removed::from_schema(&Path::from_iter(["foo"]), &get_deprecation_test_schema());
+        let expected_removed = Removed {
             path: Path::from(vec!["foo".to_owned()]),
             replacement: Some("new_key".to_owned()).into(),
-            removed_in_version: Some("6.0.0".to_owned()).into(),
+            version: Some("6.0.0".to_owned()).into(),
             url: Some("my.url".to_owned()).into(),
             upgrade_handler: Some("simple".to_owned()),
         };
