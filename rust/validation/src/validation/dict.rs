@@ -1058,8 +1058,7 @@ mod tests {
                     path: vec!["foo".into()].into(),
                     replacement: None.into(),
                     version: Some("1.2.3".into()).into(),
-                    url: None.into(),
-                    upgrade_handler: None,
+                    url: None.into()
                 })
             }]
         );
@@ -1110,8 +1109,7 @@ mod tests {
                     path: vec!["foo".into()].into(),
                     replacement: None.into(),
                     version: Some("1.2.3".into()).into(),
-                    url: None.into(),
-                    upgrade_handler: None,
+                    url: None.into()
                 })
             }]
         );
@@ -1222,8 +1220,7 @@ mod tests {
                     path: vec!["old_key".into()].into(),
                     replacement: Some("new_key".into()).into(),
                     version: Some("2.0.0".into()).into(),
-                    url: None.into(),
-                    upgrade_handler: None,
+                    url: None.into()
                 })
             }]
         );
@@ -1267,8 +1264,7 @@ mod tests {
                     path: vec!["old_key".into()].into(),
                     replacement: Some("new_key".into()).into(),
                     version: Some("2.0.0".into()).into(),
-                    url: None.into(),
-                    upgrade_handler: None,
+                    url: None.into()
                 })
             }]
         );
@@ -1323,8 +1319,7 @@ mod tests {
                     path: vec!["old_key".into()].into(),
                     replacement: Some("new_key".into()).into(),
                     version: Some("2.0.0".into()).into(),
-                    url: None.into(),
-                    upgrade_handler: None,
+                    url: None.into()
                 })
             }]
         );
@@ -1386,8 +1381,7 @@ mod tests {
                     path: vec!["old_key".into()].into(),
                     replacement: Some("methods.group".into()).into(),
                     version: Some("2.0.0".into()).into(),
-                    url: None.into(),
-                    upgrade_handler: None,
+                    url: None.into()
                 })
             }]
         );
@@ -1737,7 +1731,6 @@ mod tests {
                     replacement: None.into(),
                     version: Some("1.2.3".into()).into(),
                     url: None.into(),
-                    upgrade_handler: None,
                 })
             }]
         );

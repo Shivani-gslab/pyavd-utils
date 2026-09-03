@@ -159,7 +159,7 @@ pub(crate) mod _validation {
                             version: deprecated.version.into(),
                             replacement: deprecated.replacement.into(),
                             url: deprecated.url.into(),
-                            upgrade_handler: deprecated.upgrade_handler,
+                            upgrade_handler: None,
                         });
                     }
                     ::validation::feedback::WarningIssue::IgnoredEosConfigKey(ignored) => {

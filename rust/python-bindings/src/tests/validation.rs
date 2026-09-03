@@ -63,7 +63,17 @@ fn validation_result_from_validation_result_maps_removal_to_violation_and_deprec
                 .into(),
             },
         ],
-        warnings: vec![],
+        warnings: vec![::validation::feedback::Feedback {
+            path: vec!["deprecated_key".into()].into(),
+            span: None,
+            issue: ::validation::feedback::Deprecated {
+                path: vec!["deprecated_key".into()].into(),
+                replacement: Some("new_deprecated_key".to_owned()).into(),
+                version: Some("7.0.0".to_owned()).into(),
+                url: None.into(),
+            }
+            .into(),
+        }],
         infos: vec![],
     };
 
@@ -72,7 +82,7 @@ fn validation_result_from_validation_result_maps_removal_to_violation_and_deprec
     assert_eq!(py_result.violations.len(), 2);
     assert_eq!(py_result.violations[0].path, vec!["old_key"]);
 
-    assert_eq!(py_result.deprecations.len(), 2);
+    assert_eq!(py_result.deprecations.len(), 3);
     let deprecation = &py_result.deprecations[0];
     assert!(deprecation.removed);
     assert_eq!(deprecation.path, vec!["old_key"]);
@@ -84,6 +94,11 @@ fn validation_result_from_validation_result_maps_removal_to_violation_and_deprec
     assert!(deprecation_without_metadata.removed);
     assert_eq!(deprecation_without_metadata.replacement, None);
     assert_eq!(deprecation_without_metadata.upgrade_handler, None);
+
+    let warning = &py_result.deprecations[2];
+    assert!(!warning.removed);
+    assert_eq!(warning.replacement.as_deref(), Some("new_deprecated_key"));
+    assert_eq!(warning.upgrade_handler, None);
 }
 
 #[test]

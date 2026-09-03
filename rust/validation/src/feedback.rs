@@ -512,7 +512,6 @@ pub struct Deprecated {
     pub replacement: ReplacementField,
     pub version: VersionField,
     pub url: UrlField,
-    pub upgrade_handler: Option<String>,
 }
 impl Deprecated {
     pub(crate) fn from_schema(path: &Path, deprecation: &avdschema::base::Deprecation) -> Self {
@@ -521,7 +520,6 @@ impl Deprecated {
             replacement: deprecation.new_key.clone().into(),
             version: deprecation.remove_in_version.clone().into(),
             url: deprecation.url.clone().into(),
-            upgrade_handler: deprecation.upgrade_handler.clone(),
         }
     }
 }
@@ -621,7 +619,6 @@ mod tests {
             replacement: Some("another_key".to_owned()).into(),
             version: Some("6.0.0".to_owned()).into(),
             url: Some("foo.bar".to_owned()).into(),
-            upgrade_handler: Some("simple".to_owned()),
         };
         assert_eq!(
             format!("{deprecated}").as_str(),
@@ -665,7 +662,6 @@ mod tests {
             replacement: Some("new_key".to_owned()).into(),
             version: Some("6.0.0".to_owned()).into(),
             url: Some("my.url".to_owned()).into(),
-            upgrade_handler: Some("simple".to_owned()),
         };
         assert_eq!(deprecated, expected_deprecated);
     }
